@@ -73,10 +73,13 @@ recipeDependencies {
     parserClasspath("org.springframework:spring-core:5.+")
     parserClasspath("org.springframework:spring-core:6.+")
 
+    parserClasspath("org.springframework:spring-test:6.+")
+
     parserClasspath("org.springframework:spring-web:4.+")
     parserClasspath("org.springframework:spring-web:5.+")
     parserClasspath("org.springframework:spring-web:6.+")
 
+    parserClasspath("org.springframework:spring-webflux:5.+")
     parserClasspath("org.springframework:spring-webmvc:5.+")
 
     parserClasspath("org.springframework.data:spring-data-commons:2.+")
@@ -85,8 +88,6 @@ recipeDependencies {
 
     parserClasspath("org.springframework.batch:spring-batch-core:4.+")
     parserClasspath("org.springframework.batch:spring-batch-core:5.+")
-
-    parserClasspath("org.springframework.batch:spring-batch-infrastructure:4.+")
     parserClasspath("org.springframework.batch:spring-batch-infrastructure:5.+")
 
     parserClasspath("org.springframework.security:spring-security-config:5.8.+")
@@ -122,6 +123,7 @@ dependencies {
 
     runtimeOnly("org.openrewrite:rewrite-java-17")
     runtimeOnly("org.openrewrite.recipe:rewrite-hibernate:$rewriteVersion")
+    runtimeOnly("org.openrewrite.recipe:rewrite-micrometer:$rewriteVersion")
     runtimeOnly("org.openrewrite.recipe:rewrite-migrate-java:$rewriteVersion")
     runtimeOnly("org.openrewrite.recipe:rewrite-openapi:${rewriteVersion}")
     runtimeOnly("org.openrewrite.recipe:rewrite-testing-frameworks:$rewriteVersion")
@@ -200,17 +202,23 @@ dependencies {
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework:spring-web:5.3.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework:spring-webmvc:5.3.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework:spring-webflux:5.3.+")
+    "testWithSpringBoot_2_7RuntimeOnly"("org.springframework.data:spring-data-jpa:2.7.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework.security:spring-security-core:5.7.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework.security:spring-security-config:5.7.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework.security:spring-security-web:5.7.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.springframework.security:spring-security-ldap:5.7.+")
     "testWithSpringBoot_2_7RuntimeOnly"("org.apache.tomcat.embed:tomcat-embed-core:9.0.+")
+    "testWithSpringBoot_2_7RuntimeOnly"("jakarta.persistence:jakarta.persistence-api:2.2.3")
+    "testWithSpringBoot_2_7RuntimeOnly"("jakarta.validation:jakarta.validation-api:2.0.2")
+    "testWithSpringBoot_2_7RuntimeOnly"("jakarta.xml.bind:jakarta.xml.bind-api:2.3.3")
 
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.boot:spring-boot-starter:3.0.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.boot:spring-boot-starter-test:3.0.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework:spring-context:6.0.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework:spring-web:6.0.+")
+    "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.batch:spring-batch-core:4.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.batch:spring-batch-core:5.+")
+    "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.batch:spring-batch-infrastructure:4.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.batch:spring-batch-infrastructure:5.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.security:spring-security-core:6.0.+")
     "testWithSpringBoot_3_0RuntimeOnly"("org.springframework.security:spring-security-config:6.0.+")
