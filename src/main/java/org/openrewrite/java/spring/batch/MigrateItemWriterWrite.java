@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,14 +15,15 @@
  */
 package org.openrewrite.java.spring.batch;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -40,7 +41,7 @@ public class MigrateItemWriterWrite extends Recipe {
 
     @Override
     public String getDescription() {
-        return "`JobBuilderFactory` was deprecated in Springbatch 5.x : replaced by `JobBuilder`.";
+        return "`JobBuilderFactory` was deprecated in spring-batch 5.x: replaced by `JobBuilder`.";
     }
 
     private static final MethodMatcher ITEM_WRITER_MATCHER = new MethodMatcher("org.springframework.batch.item.ItemWriter write(java.util.List)", true);
@@ -58,16 +59,19 @@ public class MigrateItemWriterWrite extends Recipe {
                 }
 
                 J.VariableDeclarations parameter = (J.VariableDeclarations) m.getParameters().get(0);
-                if (!(parameter.getTypeExpression() instanceof J.ParameterizedType)
-                    || ((J.ParameterizedType) parameter.getTypeExpression()).getTypeParameters() == null) {
+                if (!(parameter.getTypeExpression() instanceof J.ParameterizedType) ||
+                    ((J.ParameterizedType) parameter.getTypeExpression()).getTypeParameters() == null) {
                     return m;
                 }
                 String chunkTypeParameter = ((J.ParameterizedType) parameter.getTypeExpression()).getTypeParameters().get(0).toString();
                 String paramName = parameter.getVariables().get(0).getSimpleName();
 
                 // @Override may or may not already be present
+
                 String annotationsWithOverride = Stream.concat(
-                                m.getAllAnnotations().stream().map(it -> it.print(getCursor())),
+                                service(AnnotationService.class)
+                                        .getAllAnnotations(getCursor()).stream()
+                                        .map(it -> it.print(getCursor())),
                                 Stream.of("@Override"))
                         .distinct()
                         .collect(Collectors.joining("\n"));
@@ -98,7 +102,7 @@ public class MigrateItemWriterWrite extends Recipe {
                                         .collect(Collectors.joining(" ")),
                                 chunkTypeParameter,
                                 paramName,
-                                m.getBody() == null ? "" : m.getBody().print(getCursor()));
+                                m.getBody() == null ? ";" : m.getBody().print(getCursor()));
 
                 maybeAddImport("org.springframework.batch.item.Chunk");
                 maybeRemoveImport("java.util.List");
@@ -117,12 +121,13 @@ public class MigrateItemWriterWrite extends Recipe {
             this.parameterName = parameterName;
         }
 
+        private static final MethodMatcher COLLECTION_MATCHER = new MethodMatcher("java.util.Collection *(..)", true);
         private static final MethodMatcher LIST_MATCHER = new MethodMatcher("java.util.List *(..)", true);
 
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-            if (LIST_MATCHER.matches(mi) && isParameter(mi.getSelect())) {
+            if ((COLLECTION_MATCHER.matches(mi) || LIST_MATCHER.matches(mi)) && isParameter(mi.getSelect())) {
                 assert mi.getPadding().getSelect() != null;
                 // No need to take care of typing here, since it's going to be printed and parsed on the JavaTemplate later on.
                 mi = mi.withSelect(newGetItemsMethodInvocation(mi.getPadding().getSelect()));

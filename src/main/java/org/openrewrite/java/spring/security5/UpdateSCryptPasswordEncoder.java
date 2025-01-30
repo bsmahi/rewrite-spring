@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,8 +63,8 @@ public class UpdateSCryptPasswordEncoder extends Recipe {
 
     @Override
     public String getDescription() {
-        return "In Spring Security 5.8 some `SCryptPasswordEncoder` constructors have been deprecated in favor of factory methods. "
-                + "Refer to the [ Spring Security migration docs](https://docs.spring.io/spring-security/reference/5.8/migration/index.html#_update_scryptpasswordencoder) for more information.";
+        return "In Spring Security 5.8 some `SCryptPasswordEncoder` constructors have been deprecated in favor of factory methods. " +
+                "Refer to the [ Spring Security migration docs](https://docs.spring.io/spring-security/reference/5.8/migration/index.html#_update_scryptpasswordencoder) for more information.";
     }
 
     @Override
@@ -88,17 +88,17 @@ public class UpdateSCryptPasswordEncoder extends Recipe {
                             Expression keyLength = arguments.get(3);
                             Expression saltLength = arguments.get(4);
                             maybeAddImport(SCRYPT_PASSWORD_ENCODER_CLASS);
-                            if (resolvedValueMatchesLiteral(cpuCost, DEFAULT_CPU_COST)
-                                    && resolvedValueMatchesLiteral(memoryCost, DEFAULT_MEMORY_COST)
-                                    && resolvedValueMatchesLiteral(parallelization, DEFAULT_PARALLELIZATION)
-                                    && resolvedValueMatchesLiteral(keyLength, DEFAULT_KEY_LENGTH)
-                                    && resolvedValueMatchesLiteral(saltLength, DEFAULT_SALT_LENGTH)) {
+                            if (resolvedValueMatchesLiteral(cpuCost, DEFAULT_CPU_COST) &&
+                                    resolvedValueMatchesLiteral(memoryCost, DEFAULT_MEMORY_COST) &&
+                                    resolvedValueMatchesLiteral(parallelization, DEFAULT_PARALLELIZATION) &&
+                                    resolvedValueMatchesLiteral(keyLength, DEFAULT_KEY_LENGTH) &&
+                                    resolvedValueMatchesLiteral(saltLength, DEFAULT_SALT_LENGTH)) {
                                 return newV58FactoryMethodTemplate(ctx).apply(getCursor(), newClass.getCoordinates().replace());
-                            } else if (resolvedValueMatchesLiteral(cpuCost, DEFAULT_V41_CPU_COST)
-                                    && resolvedValueMatchesLiteral(memoryCost, DEFAULT_V41_MEMORY_COST)
-                                    && resolvedValueMatchesLiteral(parallelization, DEFAULT_V41_PARALLELIZATION)
-                                    && resolvedValueMatchesLiteral(keyLength, DEFAULT_V41_KEY_LENGTH)
-                                    && resolvedValueMatchesLiteral(saltLength, DEFAULT_V41_SALT_LENGTH)) {
+                            } else if (resolvedValueMatchesLiteral(cpuCost, DEFAULT_V41_CPU_COST) &&
+                                    resolvedValueMatchesLiteral(memoryCost, DEFAULT_V41_MEMORY_COST) &&
+                                    resolvedValueMatchesLiteral(parallelization, DEFAULT_V41_PARALLELIZATION) &&
+                                    resolvedValueMatchesLiteral(keyLength, DEFAULT_V41_KEY_LENGTH) &&
+                                    resolvedValueMatchesLiteral(saltLength, DEFAULT_V41_SALT_LENGTH)) {
                                 return newV41FactoryMethodTemplate(ctx).apply(getCursor(), newClass.getCoordinates().replace());
                             }
                         }

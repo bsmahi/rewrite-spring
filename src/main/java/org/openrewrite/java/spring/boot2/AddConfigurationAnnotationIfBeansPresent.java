@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -64,8 +64,8 @@ public class AddConfigurationAnnotationIfBeansPresent extends Recipe {
                 maybeAddImport(FQN_CONFIGURATION);
                 return JavaTemplate.builder("@" + CONFIGURATION_SIMPLE_NAME)
                     .imports(FQN_CONFIGURATION)
-                    .javaParser(JavaParser.fromJavaVersion().dependsOn("package " + CONFIGURATION_PACKAGE
-                                                                       + "; public @interface " + CONFIGURATION_SIMPLE_NAME + " {}"))
+                    .javaParser(JavaParser.fromJavaVersion().dependsOn("package " + CONFIGURATION_PACKAGE +
+                                                                       "; public @interface " + CONFIGURATION_SIMPLE_NAME + " {}"))
                     .build().apply(
                         getCursor(),
                         c.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName))

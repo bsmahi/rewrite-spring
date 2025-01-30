@@ -1,11 +1,25 @@
-![Logo](https://github.com/openrewrite/rewrite/raw/main/doc/logo-oss.png)
-### Eliminate legacy Spring patterns. Automatically.
+<p align="center">
+  <a href="https://docs.openrewrite.org">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/openrewrite/rewrite/raw/main/doc/logo-oss-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://github.com/openrewrite/rewrite/raw/main/doc/logo-oss-light.svg">
+      <img alt="OpenRewrite Logo" src="https://github.com/openrewrite/rewrite/raw/main/doc/logo-oss-light.svg" width='600px'>
+    </picture>
+  </a>
+</p>
 
+<div align="center">
+  <h1>rewrite-spring</h1>
+</div>
+
+<div align="center">
+
+<!-- Keep the gap above this line, otherwise they won't render correctly! -->
 [![ci](https://github.com/openrewrite/rewrite-spring/actions/workflows/ci.yml/badge.svg)](https://github.com/openrewrite/rewrite-spring/actions/workflows/ci.yml)
-[![Apache 2.0](https://img.shields.io/github/license/openrewrite/rewrite-spring.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Maven Central](https://img.shields.io/maven-central/v/org.openrewrite.recipe/rewrite-spring.svg)](https://mvnrepository.com/artifact/org.openrewrite.recipe/rewrite-spring)
 [![Revved up by Develocity](https://img.shields.io/badge/Revved%20up%20by-Develocity-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.openrewrite.org/scans)
 [![Contributing Guide](https://img.shields.io/badge/Contributing-Guide-informational)](https://github.com/openrewrite/.github/blob/main/CONTRIBUTING.md)
+</div>
 
 ## What is this?
 
@@ -23,6 +37,16 @@ See the full documentation at [docs.openrewrite.org](https://docs.openrewrite.or
 2. Revert any unwanted changes to src/main/resources/META-INF/rewrite/*.yml
 3. Commit & push changes.
 4. Repeat periodically as new minor versions of Spring Boot are released.
+
+## Why do artifact scanners detect vulnerabilities in recipe artifacts/JARs?
+
+In order to modernize and upgrade old or vulnerable code, some OpenRewrite recipe modules bundle copies of old libraries. Libraries bundled into recipe modules are never executed.
+
+OpenRewrite exercises the Java compiler internally to compile code patterns that exist in these old and/or vulnerable libraries. These patterns are then used to match old or vulnerable code for the sake of modernizing or repairing it.
+
+Using a library in compilation in this way does not trigger class initialization in the way that reflection might, for example. In other words, code paths in libraries used in compilation are never executed, and thus the vulnerability is not exploitable.
+
+The jar has libraries bundled inside of the [META-INF/rewrite/classpath directory](https://github.com/openrewrite/rewrite-spring/tree/main/src/main/resources/META-INF/rewrite/classpath). However, those JARs are not made into a Fat Jar or a shaded library in the traditional sense. It is not possible that by using rewrite-spring that one of those libraries gets called.
 
 ## Contributing
 

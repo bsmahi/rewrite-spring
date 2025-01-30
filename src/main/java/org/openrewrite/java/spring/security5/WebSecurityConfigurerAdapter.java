@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,9 +15,9 @@
  */
 package org.openrewrite.java.spring.security5;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
@@ -54,10 +54,7 @@ public class WebSecurityConfigurerAdapter extends Recipe {
     private static final String FQN_USER = "org.springframework.security.core.userdetails.User";
     private static final String FQN_USER_DETAILS_BUILDER = "org.springframework.security.core.userdetails.User$UserBuilder";
     private static final String FQN_USER_DETAILS = "org.springframework.security.core.userdetails.UserDetails";
-    private static final String BEAN_PKG = "org.springframework.context.annotation";
-    private static final String BEAN_SIMPLE_NAME = "Bean";
-    private static final String FQN_BEAN = BEAN_PKG + "." + BEAN_SIMPLE_NAME;
-    private static final String BEAN_ANNOTATION = "@" + BEAN_SIMPLE_NAME;
+    private static final String FQN_BEAN = "org.springframework.context.annotation.Bean";
 
     private static final MethodMatcher CONFIGURE_HTTP_SECURITY_METHOD_MATCHER =
             new MethodMatcher("org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter configure(org.springframework.security.config.annotation.web.builders.HttpSecurity)", true);
@@ -98,11 +95,11 @@ public class WebSecurityConfigurerAdapter extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>(FQN_WEB_SECURITY_CONFIGURER_ADAPTER, false), new JavaIsoVisitor<ExecutionContext>() {
-            @Nullable
+
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                boolean isWebSecurityConfigurerAdapterClass = TypeUtils.isAssignableTo(FQN_WEB_SECURITY_CONFIGURER_ADAPTER, classDecl.getType())
-                        && isAnnotatedWith(classDecl.getLeadingAnnotations(), FQN_CONFIGURATION);
+            public J.@Nullable ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                boolean isWebSecurityConfigurerAdapterClass = TypeUtils.isAssignableTo(FQN_WEB_SECURITY_CONFIGURER_ADAPTER, classDecl.getType()) &&
+                        isAnnotatedWith(classDecl.getLeadingAnnotations(), FQN_CONFIGURATION);
                 boolean hasConflict = false;
                 if (isWebSecurityConfigurerAdapterClass) {
                     for (Statement s : classDecl.getBody().getStatements()) {
@@ -126,8 +123,7 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                 return classDecl;
             }
 
-            @Nullable
-            private J.ClassDeclaration processSecurityAdapterClass(J.ClassDeclaration classDecl) {
+            private J.@Nullable ClassDeclaration processSecurityAdapterClass(J.ClassDeclaration classDecl) {
                 classDecl = classDecl.withExtends(null);
                 // Flatten configuration classes if applicable
                 Cursor enclosingClassCursor = getCursor().getParent();
@@ -145,15 +141,7 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                         }
                         // only applicable to former subclasses of WebSecurityConfigurerAdapter - other classes won't be flattened
                         classesToFlatten.add(classDecl);
-                        // Remove imports for annotations being removed together with class declaration
-                        // It is impossible in the general case to tell whether some of these annotations might apply to the bean methods
-                        // However, a set of hardcoded annotations can be moved in the future
-                        for (J.Annotation a : classDecl.getLeadingAnnotations()) {
-                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(a.getType());
-                            if (type != null) {
-                                maybeRemoveImport(type);
-                            }
-                        }
+                        maybeRemoveImport(FQN_CONFIGURATION);
                         classDecl = null; // remove class
                     }
                 }
@@ -218,9 +206,12 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                                         continue;
                                     }
                                     String uniqueName = computeBeanNameFromClassName(fc.getSimpleName(), beanType.getClassName());
+                                    List<J.Annotation> fcLeadingAnnotations = ListUtils.map(fc.getLeadingAnnotations(),
+                                            anno -> TypeUtils.isOfClassType(anno.getType(), FQN_CONFIGURATION) ? null : anno);
                                     s = m
                                             .withName(m.getName().withSimpleName(uniqueName))
-                                            .withMethodType(m.getMethodType().withName(uniqueName));
+                                            .withMethodType(m.getMethodType().withName(uniqueName))
+                                            .withLeadingAnnotations(ListUtils.concatAll(m.getLeadingAnnotations(), fcLeadingAnnotations));
                                     s = autoFormat(s, ctx, new Cursor(getCursor(), classDecl.getBody()));
                                 }
                             }
@@ -236,9 +227,9 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                 String methodName = m.getSimpleName();
                 JavaType.Method methodType = m.getMethodType();
                 return (methodType == null && ("authenticationManagerBean".equals(methodName) || "userDetailsServiceBean".equals(methodName))) ||
-                        (USER_DETAILS_SERVICE_BEAN_METHOD_MATCHER.matches(methodType)
-                                || AUTHENTICATION_MANAGER_BEAN_METHOD_MATCHER.matches(methodType)
-                                || (CONFIGURE_AUTH_MANAGER_SECURITY_METHOD_MATCHER.matches(methodType) && inConflictingAuthConfigMethod(m)));
+                        (USER_DETAILS_SERVICE_BEAN_METHOD_MATCHER.matches(methodType) ||
+                                AUTHENTICATION_MANAGER_BEAN_METHOD_MATCHER.matches(methodType) ||
+                                (CONFIGURE_AUTH_MANAGER_SECURITY_METHOD_MATCHER.matches(methodType) && inConflictingAuthConfigMethod(m)));
             }
 
             private boolean inConflictingAuthConfigMethod(J.MethodDeclaration m) {
@@ -286,18 +277,12 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                 if (type != null) {
                     type = type.withName(newMethodName).withReturnType(inmemoryAuthConfigType);
                     if (!keepParams) {
-                        type = type
-                                .withParameterTypes(Collections.emptyList())
-                                .withParameterNames(Collections.emptyList());
                         for (JavaType pt : type.getParameterTypes()) {
-                            JavaType.FullyQualified fqt = TypeUtils.asFullyQualified(pt);
-                            if (fqt != null) {
-                                maybeRemoveImport(fqt);
-                            }
+                            maybeRemoveImport(TypeUtils.asFullyQualified(pt));
                         }
+                        type = type.withParameterTypes(Collections.emptyList()).withParameterNames(Collections.emptyList());
                     }
                 }
-
                 Space returnPrefix = m.getReturnTypeExpression() == null ? Space.EMPTY : m.getReturnTypeExpression().getPrefix();
                 m = m.withLeadingAnnotations(ListUtils.map(m.getLeadingAnnotations(), anno -> {
                             if (TypeUtils.isOfClassType(anno.getType(), FQN_OVERRIDE)) {
@@ -316,9 +301,15 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                 }
 
                 maybeAddImport(inmemoryAuthConfigType);
-                // not calling `updateCursor()` here because `visitBlock()` currently requires
-                // the original to be stored in the cursor
-                return addBeanAnnotation(m, new Cursor(getCursor().getParentOrThrow(), m));
+                maybeAddImport(FQN_BEAN);
+                return JavaTemplate.builder("@Bean")
+                        .imports(FQN_BEAN)
+                        .javaParser(JavaParser.fromJavaVersion().dependsOn(
+                                "package org.springframework.context.annotation;public @interface Bean {}"))
+                        .build()
+                        // not calling `updateCursor()` here because `visitBlock()` currently requires the original to be stored in the cursor
+                        .apply(new Cursor(getCursor().getParentOrThrow(), m),
+                                m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
             }
 
             @Override
@@ -393,7 +384,6 @@ public class WebSecurityConfigurerAdapter extends Recipe {
 
             private J.Block handleAuthInMemory(J.Block b, J.MethodDeclaration parentMethod) {
                 Expression userExpr = findUserParameterExpression(b.getStatements().get(b.getStatements().size() - 1));
-                JavaType.FullyQualified type = userExpr == null ? null : TypeUtils.asFullyQualified(userExpr.getType());
                 String typeStr = "";
                 if (userExpr != null) {
                     if (userExpr.getType() instanceof JavaType.Primitive) {
@@ -452,19 +442,6 @@ public class WebSecurityConfigurerAdapter extends Recipe {
                 maybeAddImport(FQN_INMEMORY_AUTH_MANAGER);
                 maybeRemoveImport(FQN_AUTH_MANAGER_BUILDER);
                 return b;
-            }
-
-            private J.MethodDeclaration addBeanAnnotation(J.MethodDeclaration m, Cursor c) {
-                maybeAddImport(FQN_BEAN);
-                return JavaTemplate.builder(BEAN_ANNOTATION)
-                    .imports(FQN_BEAN)
-                    .javaParser(JavaParser.fromJavaVersion()
-                        .dependsOn("package " + BEAN_PKG + "; public @interface " + BEAN_SIMPLE_NAME + " {}"))
-                    .build()
-                    .apply(
-                        c,
-                        m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName))
-                    );
             }
         });
     }
@@ -535,9 +512,8 @@ public class WebSecurityConfigurerAdapter extends Recipe {
         return AuthType.NONE;
     }
 
-    @Nullable
-    private Expression findUserParameterExpression(Statement s) {
-        AtomicReference<Expression> context = new AtomicReference<>();
+    private @Nullable Expression findUserParameterExpression(Statement s) {
+        AtomicReference<@Nullable Expression> context = new AtomicReference<>();
         new JavaIsoVisitor<AtomicReference<Expression>>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicReference<Expression> ref) {
@@ -550,5 +526,4 @@ public class WebSecurityConfigurerAdapter extends Recipe {
         }.visit(s, context);
         return context.get();
     }
-
 }

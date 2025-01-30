@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
 package org.openrewrite.java.spring.boot2;
 
 import lombok.Data;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.spring.ExpandProperties;
 import org.openrewrite.yaml.CoalescePropertiesVisitor;
 import org.openrewrite.yaml.MergeYamlVisitor;
@@ -58,11 +58,11 @@ public class MergeBootstrapYamlWithApplicationYaml extends ScanningRecipe<MergeB
                 }
                 SourceFile source = (SourceFile) tree;
                 Path sourcePath = source.getSourcePath();
-                if (acc.getBootstrapYaml() == null && source instanceof Yaml.Documents
-                        && PathUtils.matchesGlob(sourcePath, "**/main/resources/bootstrap.yml")) {
+                if (acc.getBootstrapYaml() == null && source instanceof Yaml.Documents &&
+                        PathUtils.matchesGlob(sourcePath, "**/main/resources/bootstrap.yml")) {
                     acc.setBootstrapYaml((Yaml.Documents) source);
-                } else if (acc.getApplicationYaml() == null
-                        && PathUtils.matchesGlob(sourcePath, "**/main/resources/application.yml")) {
+                } else if (acc.getApplicationYaml() == null &&
+                        PathUtils.matchesGlob(sourcePath, "**/main/resources/application.yml")) {
                     acc.setApplicationYaml((Yaml.Documents) source);
                 }
                 return source;
@@ -122,8 +122,8 @@ public class MergeBootstrapYamlWithApplicationYaml extends ScanningRecipe<MergeB
 
     @Data
     static class Accumulator {
-        @Nullable Yaml.Documents bootstrapYaml;
+        Yaml.@Nullable Documents bootstrapYaml;
 
-        @Nullable Yaml.Documents applicationYaml;
+        Yaml.@Nullable Documents applicationYaml;
     }
 }

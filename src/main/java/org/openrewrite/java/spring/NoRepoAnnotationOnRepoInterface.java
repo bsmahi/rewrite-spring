@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -50,8 +50,8 @@ public class NoRepoAnnotationOnRepoInterface extends Recipe {
                 J.ClassDeclaration c = super.visitClassDeclaration(classDecl, ctx);
                 if (c.getKind() == J.ClassDeclaration.Kind.Type.Interface) {
                     boolean hasRepoAnnotation = c.getLeadingAnnotations().stream().anyMatch(annotation -> {
-                        if (annotation.getArguments() == null || annotation.getArguments().isEmpty()
-                                || annotation.getArguments().get(0) instanceof J.Empty) {
+                        if (annotation.getArguments() == null || annotation.getArguments().isEmpty() ||
+                                annotation.getArguments().get(0) instanceof J.Empty) {
                             JavaType.FullyQualified type = TypeUtils.asFullyQualified(annotation.getType());
                             return type != null && ANNOTATION_REPOSITORY.equals(type.getFullyQualifiedName());
                         }
@@ -59,7 +59,8 @@ public class NoRepoAnnotationOnRepoInterface extends Recipe {
                     });
                     if (hasRepoAnnotation && TypeUtils.isAssignableTo(INTERFACE_REPOSITORY, c.getType())) {
                         maybeRemoveImport(ANNOTATION_REPOSITORY);
-                        return (J.ClassDeclaration) new RemoveAnnotationVisitor(new AnnotationMatcher("@" + ANNOTATION_REPOSITORY)).visit(c, ctx, getCursor());
+                        return (J.ClassDeclaration) new RemoveAnnotationVisitor(new AnnotationMatcher("@" + ANNOTATION_REPOSITORY))
+                                .visit(c, ctx, getCursor().getParentOrThrow());
                     }
                 }
                 return c;

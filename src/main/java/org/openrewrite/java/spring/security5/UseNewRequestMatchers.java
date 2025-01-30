@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 
 import static java.util.stream.Collectors.joining;
 
@@ -39,7 +40,6 @@ public class UseNewRequestMatchers extends Recipe {
     private static final MethodMatcher MVC_MATCHERS = new MethodMatcher(CLAZZ + " mvcMatchers(..)", true);
     private static final MethodMatcher REGEX_MATCHERS = new MethodMatcher(CLAZZ + " regexMatchers(..)");
     private static final MethodMatcher CSRF_MATCHERS = new MethodMatcher("org.springframework.security.config.annotation.web.configurers.CsrfConfigurer ignoringAntMatchers(..)");
-
 
     @Override
     public String getDisplayName() {
@@ -64,16 +64,18 @@ public class UseNewRequestMatchers extends Recipe {
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                         boolean isCsrfMatcher = CSRF_MATCHERS.matches(mi);
-                        if ((ANT_MATCHERS.matches(mi) || MVC_MATCHERS.matches(mi) || REGEX_MATCHERS.matches(mi) || isCsrfMatcher)
-                                && mi.getSelect() != null) {
+                        if ((ANT_MATCHERS.matches(mi) || MVC_MATCHERS.matches(mi) || REGEX_MATCHERS.matches(mi) || isCsrfMatcher) &&
+                                mi.getSelect() != null) {
                             String parametersTemplate = mi.getArguments().stream().map(arg -> "#{any()}").collect(joining(", "));
                             String replacementMethodName = isCsrfMatcher ? "ignoringRequestMatchers" : "requestMatchers";
-                            JavaTemplate template = JavaTemplate.builder(String.format(replacementMethodName + "(%s)", parametersTemplate))
+                            J.MethodInvocation applied = JavaTemplate.builder(String.format("%s(%s)", replacementMethodName, parametersTemplate))
                                     .javaParser(JavaParser.fromJavaVersion().classpathFromResources(ctx, "spring-security-config-5.8"))
-                                    .build();
-                            J.MethodInvocation apply = template.apply(getCursor(), mi.getCoordinates().replaceMethod(), mi.getArguments().toArray());
-                            return apply.withSelect(mi.getSelect())
-                                    .withName(mi.getName().withSimpleName(replacementMethodName));
+                                    .build().apply(getCursor(), mi.getCoordinates().replaceMethod(), mi.getArguments().toArray());
+                            JavaType.Method newMethodType = mi.getMethodType().withName(replacementMethodName);
+                            return applied
+                                    .withSelect(mi.getSelect())
+                                    .withName(mi.getName().withSimpleName(replacementMethodName).withType(newMethodType))
+                                    .withMethodType(newMethodType);
                         }
                         return mi;
                     }

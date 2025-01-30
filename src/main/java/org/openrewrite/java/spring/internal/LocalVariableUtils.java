@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
 package org.openrewrite.java.spring.internal;
 
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -53,8 +53,7 @@ public class LocalVariableUtils {
         }
     }
 
-    @Nullable
-    private static JavaType getRootOwner(Cursor cursor) {
+    private static @Nullable JavaType getRootOwner(Cursor cursor) {
         Cursor parent = cursor.dropParentUntil(is -> is instanceof J.MethodDeclaration || is instanceof J.ClassDeclaration || is instanceof SourceFile);
         Object parentValue = parent.getValue();
         if (parentValue instanceof SourceFile) {
@@ -83,13 +82,11 @@ public class LocalVariableUtils {
      * Resolves a variable reference (by name) to the initializer expression of the corresponding declaration, provided that the
      * variable is declared as `final`. In all other cases `null` will be returned.
      */
-    @Nullable
-    private static Expression resolveVariable(String name, Cursor cursor) {
+    private static @Nullable Expression resolveVariable(String name, Cursor cursor) {
         return resolveVariable0(name, cursor.getValue(), cursor.getParentTreeCursor());
     }
 
-    @Nullable
-    private static Expression resolveVariable0(String name, J prior, Cursor cursor) {
+    private static @Nullable Expression resolveVariable0(String name, J prior, Cursor cursor) {
         Optional<VariableMatch> found = Optional.empty();
         J value = cursor.getValue();
         if (value instanceof SourceFile) {

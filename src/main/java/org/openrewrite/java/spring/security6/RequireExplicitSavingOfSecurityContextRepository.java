@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -47,8 +47,8 @@ public class RequireExplicitSavingOfSecurityContextRepository extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Remove explicit `SecurityContextConfigurer.requireExplicitSave(true)` opt-in as that is the new default in Spring Security 6. "
-                + "See the corresponding [Sprint Security 6.0 migration step](https://docs.spring.io/spring-security/reference/6.0.0/migration/servlet/session-management.html#_require_explicit_saving_of_securitycontextrepository) for details.";
+        return "Remove explicit `SecurityContextConfigurer.requireExplicitSave(true)` opt-in as that is the new default in Spring Security 6. " +
+                "See the corresponding [Sprint Security 6.0 migration step](https://docs.spring.io/spring-security/reference/6.0.0/migration/servlet/session-management.html#_require_explicit_saving_of_securitycontextrepository) for details.";
     }
 
     @Override
@@ -57,14 +57,14 @@ public class RequireExplicitSavingOfSecurityContextRepository extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 method = super.visitMethodInvocation(method, ctx);
-                if (method.getSelect() != null && method.getArguments().size() == 1
-                        && REQUIRE_EXPLICIT_SAVE_MATCHER.matches(method)
-                        && isTrue(method.getArguments().get(0))) {
+                if (method.getSelect() != null && method.getArguments().size() == 1 &&
+                        REQUIRE_EXPLICIT_SAVE_MATCHER.matches(method) &&
+                        isTrue(method.getArguments().get(0))) {
                     return ToBeRemoved.withMarker(method);
                 } else if (method.getSelect() instanceof J.MethodInvocation && ToBeRemoved.hasMarker(method.getSelect())) {
                     return method.withSelect(((J.MethodInvocation) method.getSelect()).getSelect());
-                } else if (method.getArguments().stream().anyMatch(ToBeRemoved::hasMarker)
-                        && method.getSelect() != null && TypeUtils.isAssignableTo(HTTP_SECURITY_TYPE, method.getSelect().getType())) {
+                } else if (method.getArguments().stream().anyMatch(ToBeRemoved::hasMarker) &&
+                        method.getSelect() != null && TypeUtils.isAssignableTo(HTTP_SECURITY_TYPE, method.getSelect().getType())) {
                     if (method.getArguments().stream().allMatch(ToBeRemoved::hasMarker)) {
                         return ToBeRemoved.withMarker(method);
                     }

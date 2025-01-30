@@ -1,11 +1,11 @@
 /*
  * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
 package org.openrewrite.java.spring.trait;
 
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.trait.SimpleTraitMatcher;
@@ -34,8 +34,7 @@ import static org.openrewrite.java.trait.Traits.annotated;
 public class SpringBean implements Trait<Tree> {
     Cursor cursor;
 
-    @Nullable
-    public String getName() {
+    public @Nullable String getName() {
         if (getTree() instanceof Xml.Tag) {
             Xml.Tag tag = (Xml.Tag) getTree();
             return tag.getAttributes().stream()

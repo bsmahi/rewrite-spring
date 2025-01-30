@@ -1,11 +1,11 @@
 #
-# Copyright 2023 the original author or authors.
+# Copyright 2024 the original author or authors.
 # <p>
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Moderne Source Available License (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 # <p>
-# https://www.apache.org/licenses/LICENSE-2.0
+# https://docs.moderne.io/licensing/moderne-source-available-license
 # <p>
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.spring.boot2.UpgradeSpringBoot_2_0
 displayName: Migrate from Spring Boot 1.x to 2.0
-description: >
+description: >-
   Migrate Spring Boot 1.x applications to the latest Spring Boot 2.0 release. This recipe will modify an
   application's build files, make changes to deprecated/preferred APIs, and migrate configuration settings that have
   changes between versions. This recipe will also chain additional framework migrations (Spring Framework, Spring Data,
@@ -28,11 +28,6 @@ description: >
 tags:
   - spring
   - boot
-preconditions:
-  - org.openrewrite.java.dependencies.DependencyInsight:
-      groupIdPattern: org.springframework
-      artifactIdPattern: spring-core
-      version: 4.x
 recipeList:
   # Upgrade 2.0.x from 1.x
   - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
@@ -40,6 +35,10 @@ recipeList:
       artifactId: "*"
       newVersion: 2.0.x
       overrideManagedVersion: false
+  - org.openrewrite.maven.UpgradePluginVersion:
+      groupId: org.springframework.boot
+      artifactId: spring-boot-maven-plugin
+      newVersion: 2.0.x
   - org.openrewrite.maven.UpgradeParentVersion:
       groupId: org.springframework.boot
       artifactId: spring-boot-starter-parent
@@ -73,12 +72,22 @@ recipeList:
   - org.openrewrite.java.spring.boot2.MigrateLocalServerPortAnnotation
   # Update properties
   - org.openrewrite.java.spring.boot2.SpringBootProperties_2_0
+  - org.openrewrite.java.spring.ChangeSpringPropertyValue:
+      propertyKey: spring.main.banner-mode
+      oldValue: true
+      newValue: console
+  - org.openrewrite.java.spring.ChangeSpringPropertyValue:
+      propertyKey: spring.main.banner-mode
+      oldValue: false
+      newValue: "off"
   - org.openrewrite.java.spring.boot2.SpringBoot2BestPractices
+  - org.openrewrite.apache.commons.lang.UpgradeApacheCommonsLang_2_3
+  - org.openrewrite.java.spring.data.MigrateAuditorAwareToOptional
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.spring.boot2.MigrateToWebServerFactoryCustomizer
 displayName: Use `WebServerFactoryCustomizer`
-description: >
+description: >-
   Use `WebServerFactoryCustomizer` instead of the deprecated `EmbeddedServletContainerCustomizer` in
   Spring Boot 2.0 or higher. This recipe will replace look for any classes that implement `EmbeddedServletContainerCustomizer`
   and change the interface to `WebServerFactoryCustomizer<ConfigurableServletWebServerFactory>`. This recipe also adjusts
@@ -137,31 +146,25 @@ recipeList:
   - org.openrewrite.java.ChangeType:
       oldFullyQualifiedTypeName: org.hibernate.validator.constraints.NotEmpty
       newFullyQualifiedTypeName: javax.validation.constraints.NotEmpty
+  - org.openrewrite.java.spring.boot2.MaybeAddJavaxValidationApi
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.spring.boot2.MaybeAddJavaxValidationApi
+displayName: Add `javax.validation-api` dependency
+description: Conditional on the application using a version of Spring Boot which uses javax but provides a hibernate-validator version which exports the jakarta.validation-api instead
+preconditions:
+  - org.openrewrite.java.dependencies.DependencyInsight:
+      groupIdPattern: org.springframework.boot
+      artifactIdPattern: spring-boot-starter
+      version: "[2.2,2.7)"
+recipeList:
   - org.openrewrite.java.dependencies.AddDependency:
       groupId: javax.validation
       artifactId: validation-api
       version: 2.x
       onlyIfUsing: javax.validation.constraints.*
-  - org.openrewrite.java.spring.ChangeSpringPropertyValue:
-      propertyKey: spring.main.banner-mode
-      oldValue: true
-      newValue: console
-  - org.openrewrite.java.spring.ChangeSpringPropertyValue:
-      propertyKey: spring.main.banner-mode
-      oldValue: false
-      newValue: "off"
----
-type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.spring.boot2.SpringBoot2BestPractices
-displayName: Spring Boot 2.x best practices
-description: Applies best practices to Spring Boot 2 applications.
-tags:
-  - spring
-  - boot
-recipeList:
-  - org.openrewrite.java.spring.NoRequestMappingAnnotation
-  - org.openrewrite.java.spring.ImplicitWebAnnotationNames
-  - org.openrewrite.java.spring.boot2.UnnecessarySpringExtension
-  - org.openrewrite.java.spring.NoAutowiredOnConstructor
-  - org.openrewrite.java.spring.boot2.RestTemplateBuilderRequestFactory
-  - org.openrewrite.java.spring.boot2.ReplaceDeprecatedEnvironmentTestUtils
+  - org.openrewrite.java.dependencies.AddDependency:
+      groupId: javax.validation
+      artifactId: validation-api
+      version: 2.x
+      onlyIfUsing: org.hibernate.validator.constraints.*

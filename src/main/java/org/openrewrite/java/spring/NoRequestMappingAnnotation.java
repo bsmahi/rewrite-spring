@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,12 +15,12 @@
  */
 package org.openrewrite.java.spring;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.ChangeType;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -104,7 +104,7 @@ public class NoRequestMappingAnnotation extends Recipe {
                 maybeAddImport("org.springframework.web.bind.annotation." + resolvedRequestMappingAnnotationClassName);
                 a = (J.Annotation) new ChangeType("org.springframework.web.bind.annotation.RequestMapping",
                         "org.springframework.web.bind.annotation." + resolvedRequestMappingAnnotationClassName, false)
-                        .getVisitor().visit(a, ctx, getCursor());
+                        .getVisitor().visit(a, ctx, getCursor().getParentOrThrow());
 
                 // if there is only one remaining argument now, and it is "path" or "value", then we can drop the key name
                 if (a != null && a.getArguments() != null && a.getArguments().size() == 1) {
@@ -127,9 +127,9 @@ public class NoRequestMappingAnnotation extends Recipe {
                 return Optional.empty();
             }
             return annotation.getArguments().stream()
-                    .filter(arg -> arg instanceof J.Assignment
-                            && ((J.Assignment) arg).getVariable() instanceof J.Identifier
-                            && "method".equals(((J.Identifier) ((J.Assignment) arg).getVariable()).getSimpleName()))
+                    .filter(arg -> arg instanceof J.Assignment &&
+                            ((J.Assignment) arg).getVariable() instanceof J.Identifier &&
+                            "method".equals(((J.Identifier) ((J.Assignment) arg).getVariable()).getSimpleName()))
                     .map(J.Assignment.class::cast)
                     .findFirst();
         }
@@ -142,8 +142,7 @@ public class NoRequestMappingAnnotation extends Recipe {
             return newArray.getInitializer() != null && newArray.getInitializer().size() == 1;
         }
 
-        @Nullable
-        private String requestMethodType(@Nullable J.Assignment assignment) {
+        private @Nullable String requestMethodType(J.@Nullable Assignment assignment) {
             if(assignment == null) {
                 return null;
             }
@@ -171,8 +170,7 @@ public class NoRequestMappingAnnotation extends Recipe {
             return null;
         }
 
-        @Nullable
-        private String associatedRequestMapping(String method) {
+        private @Nullable String associatedRequestMapping(String method) {
             switch (method) {
                 case "POST":
                 case "PUT":

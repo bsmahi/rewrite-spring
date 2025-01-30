@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,11 @@
 package org.openrewrite.java.spring;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlVisitor;
 import org.openrewrite.yaml.tree.Yaml;
 
@@ -62,18 +63,59 @@ public class ExpandProperties extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         YamlVisitor<ExecutionContext> visitor = new YamlVisitor<ExecutionContext>() {
             @Override
-            public Yaml visitDocuments(Yaml.Documents documents, ExecutionContext ctx) {
-                Yaml docs = super.visitDocuments(documents, ctx);
-                Yaml docsExpanded = new ExpandEntriesVisitor().visitNonNull(docs, ctx);
+            public Yaml.Documents visitDocuments(Yaml.Documents documents, ExecutionContext ctx) {
+                Yaml.Documents docs = (Yaml.Documents) super.visitDocuments(documents, ctx);
+                Yaml.Documents docsExpanded = (Yaml.Documents) new ExpandEntriesVisitor().visitNonNull(docs, ctx);
                 if (docsExpanded != docs) {
-                    docs = new CoalesceEntriesVisitor().visitNonNull(docsExpanded, ctx);
+                    docs = (Yaml.Documents) new CoalesceEntriesVisitor().visitNonNull(docsExpanded, ctx);
+                    docs = removeEmptyFirstLine(docs, ctx);
                 }
                 return docs;
             }
+
+            // If the old first entry was coalesced under a subsequent entry then it will look like a newline was added
+            private Yaml.Documents removeEmptyFirstLine(Yaml.Documents docs, ExecutionContext ctx) {
+                return (Yaml.Documents) new YamlIsoVisitor<ExecutionContext>() {
+                    boolean doneTrimming;
+                    @Override
+                    public Yaml.Scalar visitScalar(Yaml.Scalar scalar, ExecutionContext ctx) {
+                        doneTrimming = true;
+                        return scalar.withPrefix(trimNewlineBeforeComment(scalar.getPrefix()));
+                    }
+
+                    @Override
+                    public Yaml.Mapping.Entry visitMappingEntry(Yaml.Mapping.Entry entry, ExecutionContext ctx) {
+                        doneTrimming = true;
+                        return entry.withPrefix(trimNewlineBeforeComment(entry.getPrefix()));
+                    }
+
+                    @Override
+                    public Yaml.Sequence.Entry visitSequenceEntry(Yaml.Sequence.Entry entry, ExecutionContext ctx) {
+                        doneTrimming = true;
+                        return entry.withPrefix(trimNewlineBeforeComment(entry.getPrefix()));
+                    }
+
+                    @Override
+                    public @Nullable Yaml visit(@Nullable Tree tree, ExecutionContext ctx) {
+                        if (doneTrimming) {
+                            return (Yaml) tree;
+                        }
+                        return super.visit(tree, ctx);
+                    }
+
+                    private String trimNewlineBeforeComment(String prefix) {
+                        int hashIndex = prefix.indexOf('#');
+                        if(hashIndex >= 0) {
+                            return prefix.substring(0, hashIndex).trim() + prefix.substring(hashIndex);
+                        }
+                        return prefix.trim();
+                    }
+                }.visitNonNull(docs, ctx);
+            }
         };
         return sourceFileMask != null ?
-                Preconditions.check(new FindSourceFiles(sourceFileMask), visitor)
-                : visitor;
+                Preconditions.check(new FindSourceFiles(sourceFileMask), visitor) :
+                visitor;
     }
 
     private static class ExpandEntriesVisitor extends YamlVisitor<ExecutionContext> {
@@ -133,11 +175,13 @@ public class ExpandProperties extends Recipe {
                             null,
                             null
                     );
-                    Yaml.Mapping.Entry newEntry = new Yaml.Mapping.Entry(randomId(),
-                            "",
-                            Markers.EMPTY,
-                            new Yaml.Scalar(randomId(), "", Markers.EMPTY, Yaml.Scalar.Style.PLAIN, null, keyMappings.getKey()),
-                            "", newMapping);
+                    Yaml.Mapping.Entry newEntry = autoFormat(
+                            new Yaml.Mapping.Entry(randomId(),
+                                    "",
+                                    Markers.EMPTY,
+                                    new Yaml.Scalar(randomId(), "", Markers.EMPTY, Yaml.Scalar.Style.PLAIN, null, keyMappings.getKey()),
+                                    "", newMapping),
+                            ctx, getCursor());
 
                     AtomicInteger insertIndex = new AtomicInteger(-1);
                     mapping = mapping.withEntries(ListUtils.map(mapping.getEntries(), (i, ent) -> {
@@ -150,8 +194,7 @@ public class ExpandProperties extends Recipe {
                         return ent;
                     }));
                     //noinspection ConstantConditions
-                    mapping = maybeAutoFormat(mapping, mapping.withEntries(ListUtils.insertAll(mapping.getEntries(), insertIndex.get(), Collections.singletonList(newEntry))),
-                            ctx, getCursor().getParent().getValue() instanceof Yaml.Document ? getCursor().getParent() : getCursor());
+                    mapping = mapping.withEntries(ListUtils.insertAll(mapping.getEntries(), insertIndex.get(), Collections.singletonList(newEntry)));
                 }
             }
             return super.visitMapping(mapping, ctx);
